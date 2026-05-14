@@ -18,7 +18,7 @@ program lunar_analyze
     implicit none
 
     ! ---- 参数 ----
-    integer,  parameter :: N_FFT = 65536
+    integer,  parameter :: N_FFT = 131072   ! FFT 长度（补零至此，2^17）
     integer,  parameter :: N_PEAKS_MAX = 30
     real(dp), parameter :: FS = 1.0_dp
     character(len=*), parameter :: BIN_PATH = 'data/lunar_state_1900_2100.bin'
@@ -60,10 +60,10 @@ program lunar_analyze
     end if
 
     n_total = int(file_size / (8_8 * 8_8))
-    n = min(n_total, N_FFT)
+    n = n_total
     write(*, '(a, i0, a)') 'Total samples available: ', n_total
-    write(*, '(a, i0, a, i0, a)') 'Using first ', n, ' samples for FFT (', &
-        nint(real(n, dp) / 365.25_dp), ' years)'
+    write(*, '(a, i0, a, i0, a, i0)') 'Using all ', n, ' samples for FFT (', &
+        nint(real(n, dp) / 365.25_dp), ' years), zero-padded to ', N_FFT
 
     allocate(data(8, n))
     open(newunit=funit, file=BIN_PATH, access='stream', form='unformatted', status='old')
@@ -133,7 +133,7 @@ program lunar_analyze
     write(*, '(a)') ''
 
     ! ---- 配置频谱分析 ----
-    cfg%n_fft = n
+    cfg%n_fft = N_FFT
     cfg%window_type = WINDOW_HANNING
     cfg%fs = FS
     cfg%n_peaks_max = N_PEAKS_MAX

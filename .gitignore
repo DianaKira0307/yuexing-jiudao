@@ -16,3 +16,6 @@ CLAUDE.md
 
 # macOS
 .DS_Store
+
+# VS Code 本地配置
+.vscode/
