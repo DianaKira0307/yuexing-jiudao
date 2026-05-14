@@ -1,0 +1,5 @@
+{
+  "source_dirs": ["src", "app", "tests"],
+  "mod_dirs": ["build"],
+  "incl_suffixes": [".f90", ".F90"]
+}

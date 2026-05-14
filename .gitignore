@@ -1,0 +1,18 @@
+# Build artifacts
+build/
+
+# Generated data outputs (run `make run / analyze / observe` to regenerate)
+data/*.bin
+data/*.meta
+
+# JPL ephemeris — 98 MB, download separately (see README)
+JPLEPH-DE440-1Bytes
+
+# Python virtual environment
+.venv/
+
+# Claude Code 项目指令（本地使用，不入仓库）
+CLAUDE.md
+
+# macOS
+.DS_Store
