@@ -1,5 +1,6 @@
 # 月行九道 — Ecliptic node crossings (β = 0)
 # DE440 1900–2100, linear interpolation between 1-day steps
+# Frame: fixed J2000 mean ecliptic approximation
 #
 # day          lambda(deg)   type
 # ----------   -----------   ----  (A=ascending, D=descending)

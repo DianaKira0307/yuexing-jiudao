@@ -1,9 +1,9 @@
 """月行九道 — (λ, β) 天球轨迹可视化
 
-读取 data/traj_ecliptic.txt，以四个时间窗口展示月球在黄道坐标中走过的路径带。
+默认读取 data/traj_ecliptic_date.txt，以四个时间窗口展示月球在黄道坐标中走过的路径带。
 窗口宽度从 1 个月到整个节点退行周期，直接呈现"月行九道"的几何含义。
 
-输出: data/traj_ecliptic.png
+输出: data/obs_traj_ecliptic_date.png
 """
 
 import os, sys
@@ -12,8 +12,9 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-DATA_FILE = 'data/traj_ecliptic.txt'
-OUT_FILE  = 'data/obs_traj_ecliptic.png'
+FRAME = 'j2000' if '--j2000' in sys.argv else 'date'
+DATA_FILE = f'data/traj_ecliptic_{FRAME}.txt'
+OUT_FILE  = f'data/obs_traj_ecliptic_{FRAME}.png'
 
 WINDOWS = [
     ('1 month  (~1 orbit)',              30),
@@ -32,8 +33,9 @@ def main():
     days, lam, beta = data[:, 0], data[:, 1], data[:, 2]
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 9))
+    frame_label = 'SOFA date ecliptic' if FRAME == 'date' else 'fixed J2000 ecliptic'
     fig.suptitle("Lunar path on the celestial sphere — Nine Paths of the Moon\n"
-                 "(ecliptic coordinates, DE440 starting 1900-01-01)", fontsize=12)
+                 f"({frame_label}, DE440 starting 1900-01-01)", fontsize=12)
 
     colors = ['#1f77b4', '#2ca02c', '#ff7f0e', '#9467bd']
 

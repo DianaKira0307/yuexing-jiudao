@@ -1,9 +1,9 @@
 """月行九道 — β 振幅包络可视化
 
-读取 data/envelope_beta.txt，绘制月球黄纬 β 的上下包络。
+默认读取 data/envelope_beta_date.txt，绘制月球黄纬 β 的上下包络。
 包络幅度的缓慢变化（~18.6 年）直接对应升交点退行对月球南北范围的调制。
 
-输出: data/envelope_beta.png
+输出: data/obs_envelope_beta_date.png
 """
 
 import os, sys
@@ -12,8 +12,9 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-DATA_FILE = 'data/envelope_beta.txt'
-OUT_FILE  = 'data/obs_envelope_beta.png'
+FRAME = 'j2000' if '--j2000' in sys.argv else 'date'
+DATA_FILE = f'data/envelope_beta_{FRAME}.txt'
+OUT_FILE  = f'data/obs_envelope_beta_{FRAME}.png'
 NODAL_YR  = 18.61   # 交点退行周期（年）
 
 
@@ -57,8 +58,9 @@ def main():
 
     ax.set_xlabel('Years since 1900-01-01')
     ax.set_ylabel('Ecliptic latitude β (deg)')
+    frame_label = 'SOFA date ecliptic' if FRAME == 'date' else 'fixed J2000 ecliptic'
     ax.set_title('Lunar β amplitude envelope — nodal regression modulates N/S reach\n'
-                 '(DE440, 1900–2100, orange lines mark ~18.6 yr nodal period)')
+                 f'(DE440, 1900–2100, {frame_label}, orange lines mark ~18.6 yr nodal period)')
     ax.legend(loc='upper right', fontsize=9)
     ax.grid(True, alpha=0.25)
     fig.tight_layout()

@@ -14,6 +14,7 @@ module mod_orbital_elements
     private
 
     public :: icrf_to_ecliptic
+    public :: icrf_to_ecliptic_date
     public :: spherical_from_cartesian
     public :: keplerian_from_cartesian
     public :: poincare_from_keplerian
@@ -55,6 +56,37 @@ contains
         vy_e  = c * vy + s * vz
         vz_e  = -s * vy + c * vz
     end subroutine icrf_to_ecliptic
+
+    !-------------------------------------------------------------------
+    ! icrf_to_ecliptic_date: ICRS/ICRF → 历元黄道坐标旋转
+    !
+    ! 使用 SOFA iau_ECM06 生成 IAU 2006 ICRS 到 mean ecliptic/equinox
+    ! of date 的旋转矩阵。date1+date2 按 SOFA 约定应为 TT JD；本项目
+    ! 传入 DE440 采样文件中的 TDB JD，TT-TDB 差异对该矩阵可忽略。
+    !-------------------------------------------------------------------
+    subroutine icrf_to_ecliptic_date(date1, date2, x, y, z, vx, vy, vz, &
+                                     x_e, y_e, z_e, vx_e, vy_e, vz_e)
+        real(dp), intent(in)  :: date1, date2
+        real(dp), intent(in)  :: x, y, z, vx, vy, vz
+        real(dp), intent(out) :: x_e, y_e, z_e, vx_e, vy_e, vz_e
+
+        real(dp) :: rm(3, 3)
+        real(dp) :: r_icrs(3), v_icrs(3), r_ecl(3), v_ecl(3)
+
+        call iau_ECM06(date1, date2, rm)
+
+        r_icrs = [x, y, z]
+        v_icrs = [vx, vy, vz]
+        r_ecl = matmul(rm, r_icrs)
+        v_ecl = matmul(rm, v_icrs)
+
+        x_e  = r_ecl(1)
+        y_e  = r_ecl(2)
+        z_e  = r_ecl(3)
+        vx_e = v_ecl(1)
+        vy_e = v_ecl(2)
+        vz_e = v_ecl(3)
+    end subroutine icrf_to_ecliptic_date
 
     !-------------------------------------------------------------------
     ! spherical_from_cartesian: 笛卡尔 → 黄道球坐标

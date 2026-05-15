@@ -1,9 +1,9 @@
 """月行九道 — 黄道交点漂移可视化
 
-读取 data/node_crossings.txt，绘制升/降交点黄经随时间的变化。
+默认读取 data/node_crossings_date.txt，绘制升/降交点黄经随时间的变化。
 退行率约 −19.3°/年，对应 ~18.6 年完成一圈，是"月行九道"最直接的观测特征。
 
-输出: data/node_crossings.png
+输出: data/obs_node_crossings_date.png
 """
 
 import os, sys
@@ -12,8 +12,9 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-DATA_FILE = 'data/node_crossings.txt'
-OUT_FILE  = 'data/obs_node_crossings.png'
+FRAME = 'j2000' if '--j2000' in sys.argv else 'date'
+DATA_FILE = f'data/node_crossings_{FRAME}.txt'
+OUT_FILE  = f'data/obs_node_crossings_{FRAME}.png'
 
 
 def load(path):
@@ -53,8 +54,9 @@ def main():
     ld_uw = unwrap_node(ld)
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 9))
+    frame_label = 'SOFA date ecliptic' if FRAME == 'date' else 'fixed J2000 ecliptic'
     fig.suptitle('Lunar node drift — nodal regression (Nine Paths of the Moon)\n'
-                 '(DE440, 1900–2100)', fontsize=12)
+                 f'(DE440, 1900–2100, {frame_label})', fontsize=12)
 
     # ---- 上行：散点（λ mod 360°），展示退行的"斜条纹"视觉 ----
     for ax, (yr, lam, label, color) in zip(axes[0], [

@@ -20,7 +20,7 @@ VENV_SENTINEL = .venv/.installed
 MOD_SRCS = jpleph.f90 utilities.f90 time_and_coord.f90 lunar_extract.f90 fft.f90 orbital_elements.f90 spectrum.f90
 MOD_OBJS = $(addprefix $(BUILD_DIR)/, $(MOD_SRCS:.f90=.o))
 
-.PHONY: all build run test test_fft test_orbital_elements test_spectrum analyze plot plot_svg view \
+.PHONY: all build run test test_fft test_orbital_elements test_spectrum analyze plot plot_angles plot_svg view \
         envelope trajectory nodes plot_envelope plot_trajectory plot_nodes \
         observe observe_plot deploy venv clean clean-venv help
 
@@ -33,15 +33,17 @@ help:
 	@echo "  test_orbital_elements : 编译并运行 test_orbital_elements (生成 data/test_orbital_elements.log)"
 	@echo "  test_spectrum : 编译并运行 test_spectrum (生成 data/test_spectrum.log)"
 	@echo "  analyze  : 编译并运行 lunar_analyze (生成 data/peaks_*.txt)"
-	@echo "  plot     : 运行 plot_spectra.py (生成 data/*.svg)"
+	@echo "  plot     : 绘制相对功率谱图 (data/spectrum_ecliptic.png)"
+	@echo "  plot_angles : 绘制 Δλ/β 实际角度半振幅谱 (data/spectrum_angles_amplitude.png)"
+	@echo "  plot_svg : 运行 plot_spectra.py (生成 data/*.svg)"
 	@echo "  view     : 运行 view_data.py (打印统计信息)"
 	@echo "--- 扩充分析 ---"
-	@echo "  envelope      : 编译并运行 lunar_envelope (生成 data/envelope_beta.txt)"
-	@echo "  trajectory    : 编译并运行 lunar_trajectory (生成 data/traj_ecliptic.txt)"
-	@echo "  nodes         : 编译并运行 lunar_nodes (生成 data/node_crossings.txt)"
-	@echo "  plot_envelope : 绘制 β 振幅包络图 (data/envelope_beta.png)"
-	@echo "  plot_trajectory: 绘制黄道轨迹图 (data/traj_ecliptic.png)"
-	@echo "  plot_nodes    : 绘制交点漂移图 (data/node_crossings.png)"
+	@echo "  envelope      : 编译并运行 lunar_envelope (生成 data/envelope_beta_{j2000,date}.txt)"
+	@echo "  trajectory    : 编译并运行 lunar_trajectory (生成 data/traj_ecliptic_{j2000,date}.txt)"
+	@echo "  nodes         : 编译并运行 lunar_nodes (生成 data/node_crossings_{j2000,date}.txt)"
+	@echo "  plot_envelope : 绘制 date-ecliptic β 振幅包络图 (data/obs_envelope_beta_date.png)"
+	@echo "  plot_trajectory: 绘制 date-ecliptic 黄道轨迹图 (data/obs_traj_ecliptic_date.png)"
+	@echo "  plot_nodes    : 绘制 date-ecliptic 交点漂移图 (data/obs_node_crossings_date.png)"
 	@echo "  observe       : 依次运行三个计算程序"
 	@echo "  observe_plot  : 依次生成三张图"
 	@echo "  deploy        : 一键全流程 (run+analyze+observe+所有绘图)"
@@ -116,6 +118,9 @@ analyze: $(BUILD_DIR)/lunar_analyze | $(DATA_DIR)
 plot: $(VENV_SENTINEL) | $(DATA_DIR)
 	$(PYTHON) $(PY_DIR)/plot_spectra_mpl.py
 
+plot_angles: $(VENV_SENTINEL) | $(DATA_DIR)
+	$(PYTHON) $(PY_DIR)/plot_angle_amplitudes.py
+
 plot_svg: $(VENV_SENTINEL) | $(DATA_DIR)
 	$(PYTHON) $(PY_DIR)/plot_spectra.py --svg
 
@@ -158,7 +163,7 @@ observe: envelope trajectory nodes
 observe_plot: plot_envelope plot_trajectory plot_nodes
 
 # --- 一键全流程部署 ---
-deploy: run analyze observe plot observe_plot
+deploy: run analyze observe plot plot_angles observe_plot
 	@echo "=== Deploy complete. All figures saved to data/ ==="
 
 # --- 模块间依赖（确保 .mod 文件按正确顺序生成）---

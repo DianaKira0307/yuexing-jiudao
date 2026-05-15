@@ -45,6 +45,7 @@ program lunar_analyze
     real(dp) :: offset, delta, sum_t, sum_lam, sum_tt, sum_tl
     real(dp) :: a, b, n_real
     real(dp) :: tdb_start, tdb_end
+    real(dp) :: amp_deg
     type(spectrum_config) :: cfg
     type(peak_info), allocatable :: peaks(:)
     character(len=256) :: outpath
@@ -158,7 +159,7 @@ program lunar_analyze
             cycle
         end if
 
-        call find_peaks(ps, freq, n / 2 + 1, cfg, peaks, n_peaks, info)
+        call find_peaks(ps, freq, size(freq), cfg, peaks, n_peaks, info)
         if (info /= 0) then
             write(*, '(a, i0)') '  ERROR: find_peaks returned ', info
             cycle
@@ -169,16 +170,36 @@ program lunar_analyze
         outpath = 'data/peaks_' // trim(VAR_NAMES(idx)) // '.txt'
         open(newunit=funit, file=trim(outpath), status='replace', action='write')
         write(funit, '(a)') '# Lunar Nine Paths — Spectrum peaks for ' // trim(VAR_TITLES(idx))
-        write(funit, '(a, i0)') '# FFT length: ', n
+        write(funit, '(a, i0)') '# Samples: ', n
+        write(funit, '(a, i0)') '# FFT length: ', cfg%n_fft
         write(funit, '(a, f8.4, a)') '# Sampling rate: ', FS, ' cycle/day'
         write(funit, '(a)') '#'
-        write(funit, '(a)') '# rank  index   freq(cyc/day)  period(days)  power'
-        write(funit, '(a)') '# ---- -----  -------------  ------------  ------'
+        if (idx == 1) then
+            write(funit, '(a)') '# rank  index   freq(cyc/day)  period(days)  power'
+            write(funit, '(a)') '# ---- -----  -------------  ------------  ------'
 
-        do j = 1, n_peaks
-            write(funit, '(i6, i6, 2x, es14.6, 2x, f12.2, 2x, es14.6)') &
-                j, peaks(j)%index, peaks(j)%freq, peaks(j)%period, peaks(j)%power
-        end do
+            do j = 1, n_peaks
+                write(funit, '(i6, i6, 2x, es14.6, 2x, f12.2, 2x, es14.6)') &
+                    j, peaks(j)%index, peaks(j)%freq, peaks(j)%period, peaks(j)%power
+            end do
+        else
+            write(funit, '(a)') &
+                '# amp_deg is sinusoidal half-amplitude fitted at the peak frequency'
+            write(funit, '(a)') '#'
+            write(funit, '(a)') '# rank  index   freq(cyc/day)  period(days)  power          amp_deg'
+            write(funit, '(a)') '# ---- -----  -------------  ------------  ------         --------'
+
+            do j = 1, n_peaks
+                select case (idx)
+                case (2)
+                    amp_deg = estimate_peak_amplitude_deg(delta_lambda, peaks(j)%freq)
+                case (3)
+                    amp_deg = estimate_peak_amplitude_deg(beta_arr, peaks(j)%freq)
+                end select
+                write(funit, '(i6, i6, 2x, es14.6, 2x, f12.2, 2x, es14.6, 2x, f12.6)') &
+                    j, peaks(j)%index, peaks(j)%freq, peaks(j)%period, peaks(j)%power, amp_deg
+            end do
+        end if
         close(funit)
 
         write(*, '(a, a)') '  Output: ', trim(outpath)
@@ -188,5 +209,103 @@ program lunar_analyze
     write(*, '(a)') ''
     write(*, '(a)') 'All peak tables written to data/peaks_{r, dlambda, beta}.txt'
     write(*, '(a)') 'Run: python3 plot_spectra_mpl.py  (for visualization)'
+
+contains
+
+    function estimate_peak_amplitude_deg(x, freq) result(amp_deg)
+        real(dp), intent(in) :: x(:), freq
+        real(dp) :: amp_deg
+
+        real(dp) :: normal(3, 3), rhs(3), coeff(3)
+        real(dp) :: t, omega, basis(3), y
+        integer :: i, j, k, n
+
+        if (freq <= 0.0_dp) then
+            amp_deg = 0.0_dp
+            return
+        end if
+
+        normal = 0.0_dp
+        rhs = 0.0_dp
+        n = size(x)
+        omega = PI2 * freq
+
+        do i = 1, n
+            t = real(i - 1, dp)
+            y = x(i)
+            basis = [cos(omega * t), sin(omega * t), 1.0_dp]
+
+            do j = 1, 3
+                rhs(j) = rhs(j) + basis(j) * y
+                do k = 1, 3
+                    normal(j, k) = normal(j, k) + basis(j) * basis(k)
+                end do
+            end do
+        end do
+
+        call solve_3x3(normal, rhs, coeff)
+        amp_deg = sqrt(coeff(1) * coeff(1) + coeff(2) * coeff(2)) * 180.0_dp / PI
+    end function estimate_peak_amplitude_deg
+
+    subroutine solve_3x3(a_in, b_in, x)
+        real(dp), intent(in) :: a_in(3, 3), b_in(3)
+        real(dp), intent(out) :: x(3)
+
+        real(dp) :: a(3, 3), b(3), factor, pivot
+        integer :: i, j, k, p
+
+        a = a_in
+        b = b_in
+
+        do k = 1, 2
+            p = k
+            do i = k + 1, 3
+                if (abs(a(i, k)) > abs(a(p, k))) p = i
+            end do
+            if (p /= k) call swap_rows(a, b, k, p)
+
+            pivot = a(k, k)
+            if (abs(pivot) < 1.0e-30_dp) then
+                x = 0.0_dp
+                return
+            end if
+
+            do i = k + 1, 3
+                factor = a(i, k) / pivot
+                do j = k, 3
+                    a(i, j) = a(i, j) - factor * a(k, j)
+                end do
+                b(i) = b(i) - factor * b(k)
+            end do
+        end do
+
+        if (abs(a(3, 3)) < 1.0e-30_dp) then
+            x = 0.0_dp
+            return
+        end if
+
+        do i = 3, 1, -1
+            x(i) = b(i)
+            do j = i + 1, 3
+                x(i) = x(i) - a(i, j) * x(j)
+            end do
+            x(i) = x(i) / a(i, i)
+        end do
+    end subroutine solve_3x3
+
+    subroutine swap_rows(a, b, r1, r2)
+        real(dp), intent(inout) :: a(3, 3), b(3)
+        integer, intent(in) :: r1, r2
+
+        real(dp) :: tmp_row(3), tmp
+
+        tmp_row = a(r1, :)
+        a(r1, :) = a(r2, :)
+        a(r2, :) = tmp_row
+
+        tmp = b(r1)
+        b(r1) = b(r2)
+        b(r2) = tmp
+    end subroutine swap_rows
 
 end program lunar_analyze

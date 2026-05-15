@@ -32,9 +32,15 @@ def load_peaks(varname):
     if not os.path.exists(path):
         sys.exit(f'[Error] {path} not found.  Run: make analyze')
     periods, powers = [], []
+    meta = {}
     with open(path) as f:
         for line in f:
-            if line.startswith('#') or not line.strip():
+            if line.startswith('#'):
+                if ':' in line:
+                    key, value = line[1:].split(':', 1)
+                    meta[key.strip()] = value.strip()
+                continue
+            if not line.strip():
                 continue
             cols = line.split()
             if len(cols) >= 5:
@@ -43,7 +49,7 @@ def load_peaks(varname):
                 if p < P_MAX:
                     periods.append(p)
                     powers.append(pw)
-    return np.array(periods), np.array(powers)
+    return np.array(periods), np.array(powers), meta
 
 
 def fmt_period(days):
@@ -65,7 +71,7 @@ def _xfmt(x, _):
 
 
 def draw_panel(ax, varname, title, color):
-    periods, powers = load_peaks(varname)
+    periods, powers, _ = load_peaks(varname)
     if len(periods) == 0:
         return
 
@@ -102,10 +108,14 @@ def draw_panel(ax, varname, title, color):
 
 
 def main():
+    _, _, meta = load_peaks('r')
+    samples = meta.get('Samples', '?')
+    n_fft = meta.get('FFT length', '?')
+
     fig, axes = plt.subplots(3, 1, figsize=(12, 10))
     fig.subplots_adjust(hspace=0.45)
     fig.suptitle(
-        'Lunar ecliptic power spectra  (DE440, 1900-2079,  N=65536,  Hanning window)',
+        f'Lunar ecliptic power spectra  (DE440, 1900-2100, samples={samples}, FFT={n_fft}, Hanning window)',
         fontsize=11, y=0.99,
     )
 

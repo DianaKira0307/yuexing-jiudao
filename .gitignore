@@ -11,11 +11,15 @@ JPLEPH-DE440-1Bytes
 # Python virtual environment
 .venv/
 
-# Claude Code 项目指令（本地使用，不入仓库）
+# Claude Code 和其他项目指令（本地使用，不入仓库）
 CLAUDE.md
+AGENTS.md 
 
 # macOS
 .DS_Store
 
 # VS Code 本地配置
 .vscode/
+
+# SOFA 库函数文档
+lib/sofa_misc_f.pdf

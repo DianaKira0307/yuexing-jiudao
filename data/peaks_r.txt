@@ -1,5 +1,6 @@
 # Lunar Nine Paths — Spectrum peaks for Geocentric distance (km)
-# FFT length: 73050
+# Samples: 73050
+# FFT length: 131072
 # Sampling rate:   1.0000 cycle/day
 #
 # rank  index   freq(cyc/day)  period(days)  power

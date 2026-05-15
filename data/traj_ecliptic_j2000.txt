@@ -1,5 +1,6 @@
 # 月行九道 — Ecliptic trajectory (λ, β)
 # DE440 1900–2100, 1-day steps
+# Frame: fixed J2000 mean ecliptic approximation
 #
 # day          lambda(deg)   beta(deg)
       0.0000    273.813873      1.095878
